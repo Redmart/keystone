@@ -18,6 +18,9 @@ var Header = React.createClass({
 	toggleCreate (visible) {
 		this.props.toggleCreate(visible);
 	},
+	toggleDuplicateCreate (visible) {
+		this.props.toggleDuplicateCreate(visible);
+	},
 	searchStringChanged (event) {
 		this.setState({
 			searchString: event.target.value,
@@ -102,6 +105,7 @@ var Header = React.createClass({
 		return (
 			<Toolbar.Section right>
 				{this.renderCreateButton()}
+				{this.renderDuplicateCreateButton()}
 			</Toolbar.Section>
 		);
 	},
@@ -118,6 +122,22 @@ var Header = React.createClass({
 			<Button type="success" {...props}>
 				<span className="octicon octicon-plus" />
 				<ResponsiveText hiddenXS={`New ${this.props.list.singular}`} visibleXS="Create" />
+			</Button>
+		);
+	},
+	renderDuplicateCreateButton () {
+		if (this.props.list.nocreate) return null;
+
+		var props = {};
+		if (this.props.list.autocreate) {
+			props.href = '?new' + Keystone.csrf.query;
+		} else {
+			props.onClick = () => { this.toggleDuplicateCreate(true); };
+		}
+		return (
+			<Button type="success" {...props}>
+				<span className="octicon octicon-plus" />
+				<ResponsiveText hiddenXS={`Duplicate ${this.props.list.singular}`} visibleXS="Create" />
 			</Button>
 		);
 	},
