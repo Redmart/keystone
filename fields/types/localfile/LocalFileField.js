@@ -27,6 +27,10 @@ module.exports = Field.create({
 		}
 	},
 
+	isFileFormatImage () {
+		return (/\.(gif|jpg|jpeg|png)$/i).test(this.getFilename());
+	},
+
 	getFileURL () {
 		if (!this.hasLocal() && this.hasExisting()) {
 			return this.props.value.url;
@@ -102,9 +106,15 @@ module.exports = Field.create({
 		var values = null;
 
 		if (this.hasFile() && !this.state.removeExisting) {
+			var value = <div className='field-value'>{this.getFilename()}</div>;
+
+			if (this.isFileFormatImage()) {
+				value = <img src={this.getFileURL()} />;
+			}
+
 			values = (
-				<div className="file-values">
-					<FormInput noedit>{this.getFilename()}</FormInput>
+				<div className='file-values'>
+					{value}
 				</div>
 			);
 		}
@@ -214,14 +224,11 @@ module.exports = Field.create({
 
 		return (
 			<FormField label={this.props.label} className="field-type-localfile">
-
 				{this.renderFileField()}
 				{this.renderFileAction()}
-
 				<div className="file-container">{container}</div>
 				{body}
 				{this.renderNote()}
-
 			</FormField>
 		);
 	}
