@@ -11,7 +11,7 @@ var utils = require('keystone-utils');
  * This way, the consuming app/module can be an embedded node_module and path resolutions will still work
  * (process.cwd() breaks module encapsulation if the consuming app/module is itself a node_module)
  */
-var moduleRoot = (function(_rootPath) {
+var moduleRoot = (function (_rootPath) {
 	var parts = _rootPath.split(path.sep);
 	parts.pop(); //get rid of /node_modules from the end of the path
 	return parts.join(path.sep);
@@ -23,13 +23,14 @@ var moduleRoot = (function(_rootPath) {
  *
  * @api public
  */
-var Keystone = function() {
-	grappling.mixin(this).allowHooks('pre:static', 'pre:bodyparser', 'pre:session', 'pre:routes', 'pre:render', 'updates', 'signout', 'signin');
+var Keystone = function () {
+	grappling.mixin(this).allowHooks('pre:static', 'pre:bodyparser', 'pre:session', 'pre:routes', 'pre:render', 'updates', 'signout', 'signin', 'pre:logger');
 	this.lists = {};
 	this.paths = {};
 	this._options = {
 		'name': 'Keystone',
 		'brand': 'Keystone',
+		'admin path': 'keystone',
 		'compress': true,
 		'headless': false,
 		'logger': ':method :url :status :response-time ms',
@@ -83,6 +84,9 @@ var Keystone = function() {
 		this.set('cloudinary config', true);
 	}
 
+	// init mongoose
+	this.set('mongoose', require('mongoose'));
+
 	// Attach middleware packages, bound to this instance
 	this.middleware = {
 		api: require('./lib/middleware/api')(this),
@@ -104,42 +108,34 @@ Keystone.prototype.prefixModel = function (key) {
 };
 
 /* Attach core functionality to Keystone.prototype */
-Keystone.prototype.bindEmailTestRoutes = require('./lib/core/bindEmailTestRoutes');
-Keystone.prototype.connect = require('./lib/core/connect');
 Keystone.prototype.createItems = require('./lib/core/createItems');
 Keystone.prototype.getOrphanedLists = require('./lib/core/getOrphanedLists');
 Keystone.prototype.importer = require('./lib/core/importer');
 Keystone.prototype.init = require('./lib/core/init');
+Keystone.prototype.initDatabase = require('./lib/core/initDatabase');
+Keystone.prototype.initExpressApp = require('./lib/core/initExpressApp');
+Keystone.prototype.initExpressSession = require('./lib/core/initExpressSession');
 Keystone.prototype.initNav = require('./lib/core/initNav');
 Keystone.prototype.list = require('./lib/core/list');
-Keystone.prototype.mount = require('./lib/core/mount');
+Keystone.prototype.openDatabaseConnection = require('./lib/core/openDatabaseConnection');
 Keystone.prototype.populateRelated = require('./lib/core/populateRelated');
 Keystone.prototype.redirect = require('./lib/core/redirect');
 Keystone.prototype.render = require('./lib/core/render');
-Keystone.prototype.routes = require('./lib/core/routes');
 Keystone.prototype.start = require('./lib/core/start');
 Keystone.prototype.wrapHTMLError = require('./lib/core/wrapHTMLError');
 
-/* Expose Admin UI App */
-Keystone.prototype.adminApp = {
-	staticRouter: require('./admin/app/static')
-};
-
-/* Legacy Attach Mechanisms */
-Keystone.prototype.static = function(app) {
-	if (!this.get('headless')) {
-		app.use('/keystone', Keystone.prototype.adminApp.staticRouter);
-	}
-};
 
 /**
  * The exports object is an instance of Keystone.
  *
  * @api public
  */
-var keystone = module.exports = exports = new Keystone();
+var keystone = module.exports = new Keystone();
 
 // Expose modules and Classes
+keystone.Admin = {
+	Server: require('./admin/server')
+};
 keystone.Email = require('./lib/email');
 keystone.Field = require('./fields/types/Type');
 keystone.Field.Types = require('./lib/fieldTypes');
@@ -165,15 +161,15 @@ keystone.utils = utils;
  * @api public
  */
 
-Keystone.prototype.import = function(dirname) {
+Keystone.prototype.import = function (dirname) {
 
 	var initialPath = path.join(this.get('module root'), dirname);
 
-	var doImport = function(fromPath) {
+	var doImport = function (fromPath) {
 
 		var imported = {};
 
-		fs.readdirSync(fromPath).forEach(function(name) {
+		fs.readdirSync(fromPath).forEach(function (name) {
 
 			var fsPath = path.join(fromPath, name),
 			info = fs.statSync(fsPath);
@@ -203,16 +199,12 @@ Keystone.prototype.import = function(dirname) {
  * Applies Application updates
  */
 
-Keystone.prototype.applyUpdates = function(callback) {
+Keystone.prototype.applyUpdates = function (callback) {
 	var self = this;
-	self.callHook('pre:updates', function(err){
-		if(err){
-			callback(err);
-		}
-		require('./lib/updates').apply(function(err){
-			if(err){
-				callback(err);
-			}
+	self.callHook('pre:updates', function (err){
+		if (err) return callback(err);
+		require('./lib/updates').apply(function (err){
+			if (err) return callback(err);
 			self.callHook('post:updates', callback);
 		});
 	});
@@ -226,7 +218,7 @@ Keystone.prototype.applyUpdates = function(callback) {
  */
 
 Keystone.prototype.console = {};
-Keystone.prototype.console.err = function(type, msg) {
+Keystone.prototype.console.err = function (type, msg) {
 	if (keystone.get('logger')) {
 		var dashes = '\n------------------------------------------------\n';
 		console.log(dashes + 'KeystoneJS: ' + type + ':\n\n' + msg + dashes);

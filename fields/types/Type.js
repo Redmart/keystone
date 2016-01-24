@@ -98,7 +98,7 @@ Field.prototype.getOptions = function() {
 			}
 		}, this);
 		if (this.getProperties) {
-			_.extend(this.__options, this.getProperties());
+			Object.assign(this.__options, this.getProperties());
 		}
 		this.__options.hasFilterMethod = this.addFilterToQuery ? true : false;
 		this.__options.defaultValue = this.getDefaultValue();
@@ -114,7 +114,7 @@ Field.prototype.getSize = function() {
 	if (!this.__size) {
 		var size = this._fixedSize || this.options.size || this.options.width;
 		if (size !== 'small' && size !== 'medium' && size !== 'large' && size !== 'full') {
-			size = this._defaultSize || 'large';
+			size = this._defaultSize || 'full';
 		}
 		this.__size = size;
 	}
@@ -199,7 +199,7 @@ Field.prototype.getPreSaveWatcher = function() {
 	};
 
 };
-exports = module.exports = Field;
+module.exports = Field;
 
 /** Getter properties for the Field prototype */
 Object.defineProperty(Field.prototype, 'size', { get: function() { return this.getSize(); } });
@@ -283,7 +283,17 @@ Field.prototype.isModified = function(item) {
  *
  * @api public
  */
-Field.prototype.validateInput = function(data, required, item) {
+Field.prototype.validateInput = function(data, required, item, callback) {
+	process.nextTick(callback(null, this.inputIsValid()));
+};
+
+/**
+ * Validates that a value for this field has been provided in a data object
+ * Overridden by some fieldType Classes
+ *
+ * Not a reliable public API; use inputIsValid, which is async, instead
+ */
+Field.prototype.inputIsValid = function(data, required, item) {
 	if (!required) return true;
 	var value = this.getValueFromData(data);
 	if (value === undefined && item && item.get(this.path)) return true;

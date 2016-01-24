@@ -226,7 +226,7 @@ localfile.prototype.isModified = function(item) {
  * @api public
  */
 
-localfile.prototype.validateInput = function(data) {//eslint-disable-line no-unused-vars
+localfile.prototype.inputIsValid = function(data) {//eslint-disable-line no-unused-vars
 	// TODO - how should file field input be validated?
 	return true;
 };
@@ -363,4 +363,4 @@ localfile.prototype.handleRequest = function(item, req, paths, callback) {
  * Export class
  */
 
-exports = module.exports = localfile;
+module.exports = localfile;

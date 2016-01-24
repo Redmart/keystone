@@ -1,21 +1,16 @@
-/*!
- * Module dependencies.
- */
-
-var _ = require('underscore'),
-	keystone = require('../../../'),
-	util = require('util'),
-	cloudinary = require('cloudinary'),
-	MPromise = require('mpromise'),
-	utils = require('keystone-utils'),
-	super_ = require('../Type');
+var _ = require('underscore');
+var keystone = require('../../../');
+var util = require('util');
+var cloudinary = require('cloudinary');
+var MPromise = require('mpromise');
+var utils = require('keystone-utils');
+var super_ = require('../Type');
 
 /**
  * CloudinaryImage FieldType Constructor
  * @extends Field
  * @api public
  */
-
 function cloudinaryimage(list, path, options) {
 
 	this._underscoreMethods = ['format'];
@@ -52,17 +47,15 @@ function cloudinaryimage(list, path, options) {
 
 util.inherits(cloudinaryimage, super_);
 
-
 /**
  * Registers the field on the List's Mongoose Schema.
  *
  * @api public
  */
-
 cloudinaryimage.prototype.addToSchema = function() {
 
-	var field = this,
-		schema = this.list.schema;
+	var field = this;
+	var schema = this.list.schema;
 
 	var paths = this.paths = {
 		// cloudinary fields
@@ -81,7 +74,7 @@ cloudinaryimage.prototype.addToSchema = function() {
 		// form paths
 		upload: 		this._path.append('_upload'),
 		action: 		this._path.append('_action'),
-		select: 		this._path.append('_select')
+		select: 		this._path.append('_select'),
 	};
 
 	var schemaPaths = this._path.addTo({}, {
@@ -93,7 +86,7 @@ cloudinaryimage.prototype.addToSchema = function() {
 		url:			String,
 		width:			Number,
 		height:			Number,
-		secure_url:		String
+		secure_url:		String,
 	});
 
 	schema.add(schemaPaths);
@@ -165,7 +158,7 @@ cloudinaryimage.prototype.addToSchema = function() {
 			url: '',
 			width: 0,
 			height: 0,
-			secure_url: ''
+			secure_url: '',
 		});
 	};
 
@@ -173,7 +166,7 @@ cloudinaryimage.prototype.addToSchema = function() {
 		if (width) options.width = width;
 		if (height) options.height = height;
 		if ('object' === typeof other) {
-			_.extend(options, other);
+			Object.assign(options, other);
 		}
 		return options;
 	};
@@ -269,47 +262,39 @@ cloudinaryimage.prototype.addToSchema = function() {
 	this.bindUnderscoreMethods();
 };
 
-
 /**
  * Formats the field value
  *
  * @api public
  */
-
 cloudinaryimage.prototype.format = function(item) {
 	return item.get(this.paths.url);
 };
-
 
 /**
  * Detects whether the field has been modified
  *
  * @api public
  */
-
 cloudinaryimage.prototype.isModified = function(item) {
 	return item.isModified(this.paths.url);
 };
-
 
 /**
  * Validates that a value for this field has been provided in a data object
  *
  * @api public
  */
-
-cloudinaryimage.prototype.validateInput = function(data) {//eslint-disable-line no-unused-vars
+cloudinaryimage.prototype.inputIsValid = function(data) {//eslint-disable-line no-unused-vars
 	// TODO - how should image field input be validated?
 	return true;
 };
-
 
 /**
  * Updates the value for this field in the item from a data object
  *
  * @api public
  */
-
 cloudinaryimage.prototype.updateItem = function(item, data) {
 	var paths = this.paths;
 
@@ -328,7 +313,6 @@ cloudinaryimage.prototype.updateItem = function(item, data) {
 	_.each(['public_id', 'version', 'signature', 'format', 'resource_type', 'url', 'width', 'height', 'secure_url'], setValue);
 };
 
-
 /**
  * Returns a callback that handles a standard form submission for the field
  *
@@ -338,7 +322,6 @@ cloudinaryimage.prototype.updateItem = function(item, data) {
  *
  * @api public
  */
-
 cloudinaryimage.prototype.getRequestHandler = function(item, req, paths, callback) {
 
 	var field = this;
@@ -445,20 +428,16 @@ cloudinaryimage.prototype.getRequestHandler = function(item, req, paths, callbac
 
 };
 
-
 /**
  * Immediately handles a standard form submission for the field (see `getRequestHandler()`)
  *
  * @api public
  */
-
 cloudinaryimage.prototype.handleRequest = function(item, req, paths, callback) {
 	this.getRequestHandler(item, req, paths, callback)();
 };
 
-
 /*!
  * Export class
  */
-
-exports = module.exports = cloudinaryimage;
+module.exports = cloudinaryimage;

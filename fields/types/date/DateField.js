@@ -1,91 +1,78 @@
-var React = require('react');
-var Field = require('../Field');
-var Note = require('../../components/Note');
-var DateInput = require('../../components/DateInput');
-var moment = require('moment');
+import DateInput from '../../components/DateInput';
+import Field from '../Field';
+import moment from 'moment';
+import React from 'react';
+import { Button, InputGroup, FormInput } from 'elemental';
+
+/*
+TODO: Implement yearRange Prop, or deprecate for max / min values (better)
+*/
+
+const DEFAULT_INPUT_FORMAT = 'YYYY-MM-DD';
+const DEFAULT_FORMAT_STRING = 'Do MMM YYYY';
 
 module.exports = Field.create({
-	
+
 	displayName: 'DateField',
 
-	focusTargetRef: 'dateInput',
+	propTypes: {
+		formatString: React.PropTypes.string,
+		inputFormat: React.PropTypes.string,
+		label: React.PropTypes.string,
+		note: React.PropTypes.string,
+		onChange: React.PropTypes.func,
+		path: React.PropTypes.string,
+		value: React.PropTypes.string,
+	},
 
-	// default input format
-	inputFormat: 'YYYY-MM-DD',
-
-	getInitialState: function() {
-		return { 
-			value: this.props.value ? this.moment(this.props.value).format(this.inputFormat) : ''
+	getDefaultProps () {
+		return {
+			formatString: DEFAULT_FORMAT_STRING,
+			inputFormat: DEFAULT_INPUT_FORMAT,
 		};
 	},
 
-	getDefaultProps: function() {
-		return { 
-			formatString: 'Do MMM YYYY'
-		};
+	valueChanged (value) {
+		this.props.onChange({
+			path: this.props.path,
+			value: value,
+		});
 	},
 
-	moment: function(value) {
+	moment (value) {
 		var m = moment(value);
 		if (this.props.isUTC) m.utc();
 		return m;
 	},
 
-	// TODO: Move isValid() so we can share with server-side code
-	isValid: function(value) {
+	isValid (value) {
 		return moment(value, this.inputFormat).isValid();
 	},
 
-	// TODO: Move format() so we can share with server-side code
-	format: function(dateValue, format) {
-		format = format || this.inputFormat;
-		return dateValue ? this.moment(this.props.dateValue).format(format) : '';
+	format (value) {
+		return value ? this.moment(value).format(this.props.formatString) : '';
 	},
 
-	setDate: function(dateValue) {
-		this.setState({ value: dateValue });
-		this.props.onChange({
-			path: this.props.path,
-			value: this.isValid(dateValue) ? dateValue : null
-		});
+	setToday () {
+		this.valueChanged(this.moment(new Date()).format(this.props.inputFormat));
 	},
 
-	setToday: function() {
-		this.setDate(moment().format(this.inputFormat));
+	renderValue () {
+		return <FormInput noedit>{this.format(this.props.value)}</FormInput>;
 	},
 
-	valueChanged: function(value) {
-		this.setDate(value);
-	},
-
-	renderUI: function() {
-		
-		var input;
-		var fieldClassName = 'field-ui';
-
-		if (this.shouldRenderField()) {
-			input = (
-				<div className={fieldClassName}>
-					<DateInput ref="dateInput" name={this.props.path} format={this.inputFormat} value={this.state.value} onChange={this.valueChanged} yearRange={this.props.yearRange} />
-					<button type="button" className="btn btn-default btn-set-today" onClick={this.setToday}>Today</button>
-				</div>
-			);
-		} else {
-			input = (
-				<div className={fieldClassName}>
-					<div className="field-value">{this.format(this.props.value, this.props.formatString)}</div>
-				</div>
-			);
-		}
-		
+	renderField () {
+		let value = moment(this.props.value);
+		value = this.props.value && value.isValid() ? value.format(this.props.inputFormat) : this.props.value;
 		return (
-			<div className="field field-type-date">
-				<label htmlFor={this.props.path} className="field-label">{this.props.label}</label>
-				{input}
-				<div className="col-sm-9 col-md-10 col-sm-offset-3 col-md-offset-2 field-note-wrapper">
-					<Note note={this.props.note} />
-				</div>
-			</div>
+			<InputGroup>
+				<InputGroup.Section grow>
+					<DateInput ref="dateInput" name={this.props.path} format={this.props.inputFormat} value={value} onChange={this.valueChanged} />
+				</InputGroup.Section>
+				<InputGroup.Section>
+					<Button onClick={this.setToday}>Today</Button>
+				</InputGroup.Section>
+			</InputGroup>
 		);
 	}
 

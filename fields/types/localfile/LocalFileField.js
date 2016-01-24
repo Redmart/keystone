@@ -1,22 +1,23 @@
-var React = require('react'),
-	Field = require('../Field'),
-	Note = require('../../components/Note');
+import Field from '../Field';
+import React from 'react';
+import ReactDOM from 'react-dom';
+import { Button, FormField, FormInput, FormNote } from 'elemental';
 
 module.exports = Field.create({
 
-	shouldCollapse: function() {
+	shouldCollapse () {
 		return this.props.collapse && !this.hasExisting();
 	},
 
-	fileFieldNode: function() {
-		return this.refs.fileField.getDOMNode();
+	fileFieldNode () {
+		return ReactDOM.findDOMNode(this.refs.fileField);
 	},
 
-	changeFile: function() {
-		this.refs.fileField.getDOMNode().click();
+	changeFile () {
+		this.fileFieldNode().click();
 	},
 
-	getFileSource: function() {
+	getFileSource () {
 		if (this.hasLocal()) {
 			return this.state.localSource;
 		} else if (this.hasExisting()) {
@@ -30,13 +31,13 @@ module.exports = Field.create({
 		return (/\.(gif|jpg|jpeg|png)$/i).test(this.getFilename());
 	},
 
-	getFileURL: function() {
+	getFileURL () {
 		if (!this.hasLocal() && this.hasExisting()) {
 			return this.props.value.url;
 		}
 	},
 
-	undoRemove: function() {
+	undoRemove () {
 		this.fileFieldNode().value = '';
 		this.setState({
 			removeExisting: false,
@@ -46,13 +47,13 @@ module.exports = Field.create({
 		});
 	},
 
-	fileChanged: function (event) {//eslint-disable-line no-unused-vars
+	fileChanged  (event) {//eslint-disable-line no-unused-vars
 		this.setState({
 			origin: 'local'
 		});
 	},
 
-	removeFile: function (e) {
+	removeFile  (e) {
 		var state = {
 			localSource: null,
 			origin: false
@@ -81,19 +82,19 @@ module.exports = Field.create({
 		this.setState(state);
 	},
 
-	hasLocal: function() {
+	hasLocal () {
 		return this.state.origin === 'local';
 	},
 
-	hasFile: function() {
+	hasFile () {
 		return this.hasExisting() || this.hasLocal();
 	},
 
-	hasExisting: function() {
+	hasExisting () {
 		return !!this.props.value.filename;
 	},
 
-	getFilename: function() {
+	getFilename () {
 		if (this.hasLocal()) {
 			return this.fileFieldNode().value.split('\\').pop();
 		} else {
@@ -101,7 +102,7 @@ module.exports = Field.create({
 		}
 	},
 
-	renderFileDetails: function (add) {
+	renderFileDetails  (add) {
 		var values = null;
 
 		if (this.hasFile() && !this.state.removeExisting) {
@@ -119,30 +120,30 @@ module.exports = Field.create({
 		}
 
 		return (
-			<div key={this.props.path + '_details'} className='file-details'>
+			<div key={this.props.path + '_details'} className="file-details">
 				{values}
 				{add}
 			</div>
 		);
 	},
 
-	renderAlert: function() {
+	renderAlert () {
 		if (this.hasLocal()) {
 			return (
-				<div className='upload-queued pull-left'>
-					<div className='alert alert-success'>File selected - save to upload</div>
+				<div className="file-values upload-queued">
+					<FormInput noedit>File selected - save to upload</FormInput>
 				</div>
 			);
 		} else if (this.state.origin === 'cloudinary') {
 			return (
-				<div className='select-queued pull-left'>
-					<div className='alert alert-success'>File selected from Cloudinary</div>
+				<div className="file-values select-queued">
+					<FormInput noedit>File selected from Cloudinary</FormInput>
 				</div>
 			);
 		} else if (this.state.removeExisting) {
 			return (
-				<div className='delete-queued pull-left'>
-					<div className='alert alert-danger'>File {this.props.autoCleanup ? 'deleted' : 'removed'} - save to confirm</div>
+				<div className="file-values delete-queued">
+					<FormInput noedit>File {this.props.autoCleanup ? 'deleted' : 'removed'} - save to confirm</FormInput>
 				</div>
 			);
 		} else {
@@ -150,12 +151,12 @@ module.exports = Field.create({
 		}
 	},
 
-	renderClearButton: function() {
+	renderClearButton () {
 		if (this.state.removeExisting) {
 			return (
-				<button type='button' className='btn btn-link btn-cancel btn-undo-file' onClick={this.undoRemove}>
+				<Button type="link" onClick={this.undoRemove}>
 					Undo Remove
-				</button>
+				</Button>
 			);
 		} else {
 			var clearText;
@@ -165,43 +166,48 @@ module.exports = Field.create({
 				clearText = (this.props.autoCleanup ? 'Delete File' : 'Remove File');
 			}
 			return (
-				<button type='button' className='btn btn-link btn-cancel btn-delete-file' onClick={this.removeFile}>
+				<Button type="link-cancel" onClick={this.removeFile}>
 					{clearText}
-				</button>
+				</Button>
 			);
 		}
 	},
 
-	renderFileField: function() {
-		return <input ref='fileField' type='file' name={this.props.paths.upload} className='field-upload' onChange={this.fileChanged} />;
+	renderFileField () {
+		if (!this.shouldRenderField()) return null;
+
+		return <input ref="fileField" type="file" name={this.props.paths.upload} className="field-upload" onChange={this.fileChanged} tabIndex="-1" />;
 	},
 
-	renderFileAction: function() {
-		return <input type='hidden' name={this.props.paths.action} className='field-action' value={this.state.action} />;
+	renderFileAction () {
+		if (!this.shouldRenderField()) return null;
+
+		return <input type="hidden" name={this.props.paths.action} className="field-action" value={this.state.action} />;
 	},
 
-	renderFileToolbar: function() {
+	renderFileToolbar () {
 		return (
-			<div key={this.props.path + '_toolbar'} className='file-toolbar'>
-				<div className='pull-left'>
-					<button type='button' onClick={this.changeFile} className='btn btn-default btn-upload-file'>
+			<div key={this.props.path + '_toolbar'} className="file-toolbar">
+				<div className="u-float-left">
+					<Button onClick={this.changeFile}>
 						{this.hasFile() ? 'Change' : 'Upload'} File
-					</button>
+					</Button>
 					{this.hasFile() && this.renderClearButton()}
 				</div>
 			</div>
 		);
 	},
 
-	renderUI: function() {
-		var container = [],
-			body = [],
-			hasFile = this.hasFile(),
-			fieldClassName = 'field-ui';
+	renderNote () {
+		if (!this.props.note) return null;
 
-		if (hasFile) {
-			fieldClassName += ' has-file';
-		}
+		return <FormNote note={this.props.note} />;
+	},
+
+	renderUI () {
+		var container = [];
+		var body = [];
+		var hasFile = this.hasFile();
 
 		if (this.shouldRenderField()) {
 			if (hasFile) {
@@ -212,23 +218,18 @@ module.exports = Field.create({
 			if (hasFile) {
 				container.push(this.renderFileDetails());
 			} else {
-				container.push(<div className='help-block'>no file</div>);
+				container.push(<FormInput noedit>no file</FormInput>);
 			}
 		}
 
 		return (
-			<div className='field field-type-localfile'>
-				<label className='field-label'>{this.props.label}</label>
-
+			<FormField label={this.props.label} className="field-type-localfile">
 				{this.renderFileField()}
 				{this.renderFileAction()}
-
-				<div className={fieldClassName}>
-					<div className='file-container'>{container}</div>
-					{body}
-					<Note note={this.props.note} />
-				</div>
-			</div>
+				<div className="file-container">{container}</div>
+				{body}
+				{this.renderNote()}
+			</FormField>
 		);
 	}
 

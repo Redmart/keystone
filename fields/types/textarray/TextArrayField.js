@@ -1,10 +1,7 @@
-var Field = require('../Field'),
-	ArrayFieldMixin = require('../../mixins/ArrayField');
+import ArrayFieldMixin from '../../mixins/ArrayField';
+import Field from '../Field';
 
 module.exports = Field.create({
-	
 	displayName: 'TextArrayField',
-	
-	mixins: [ArrayFieldMixin]
-	
+	mixins: [ArrayFieldMixin],
 });

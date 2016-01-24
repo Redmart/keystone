@@ -12,10 +12,11 @@ var utils = require('keystone-utils');
 function relationship(list, path, options) {
 	this.many = (options.many) ? true : false;
 	this.filters = options.filters;
-	this._defaultSize = this.many ? 'full' : 'large';
+	this.createInline = (options.createInline) ? true : false;
+	this._defaultSize = 'full';
 	this._nativeType = keystone.mongoose.Schema.Types.ObjectId;
 	this._underscoreMethods = ['format'];
-	this._properties = ['isValid', 'many', 'filters'];
+	this._properties = ['isValid', 'many', 'filters', 'createInline'];
 	relationship.super_.call(this, list, path, options);
 }
 util.inherits(relationship, FieldType);
@@ -29,9 +30,36 @@ relationship.prototype.getProperties = function () {
 		refList: {
 			singular: refList.singular,
 			plural:   refList.plural,
-			path:     refList.path
+			path:     refList.path,
+			key:      refList.key,
 		}
 	};
+};
+
+/**
+ * Gets id and name for the related item(s) from populated values
+ */
+
+function expandRelatedItemData(item) {
+	if (!item || !item.id) return undefined;
+	return {
+		id: item.id,
+		name: this.refList.getDocumentName(item)
+	};
+}
+
+function truthy (value) {
+	return value;
+}
+
+relationship.prototype.getExpandedData = function(item) {
+	var value = item.get(this.path);
+	if (this.many) {
+		if (!value || !Array.isArray(value)) return [];
+		return value.map(expandRelatedItemData.bind(this)).filter(truthy);
+	} else {
+		return expandRelatedItemData.call(this, value);
+	}
 };
 
 /**
@@ -74,17 +102,20 @@ relationship.prototype.addToSchema = function() {
  */
 relationship.prototype.addFilterToQuery = function(filter, query) {
 	query = query || {};
-	if (this.many) {
-		if (filter.value) {
-			query[this.path] = (filter.inverse) ? { $nin: [filter.value] } : { $in: [filter.value] };
+	if (!Array.isArray(filter.value)) {
+		if (typeof filter.value === 'string' && filter.value) {
+			filter.value = [filter.value];
 		} else {
-			query[this.path] = (filter.inverse) ? { $not: { $size: 0 } } : { $size: 0 };
+			filter.value = [];
 		}
+	}
+	if (filter.value.length) {
+		query[this.path] = (filter.inverted) ? { $nin: filter.value } : { $in: filter.value };
 	} else {
-		if (filter.value) {
-			query[this.path] = (filter.inverse) ? { $ne: filter.value } : filter.value;
+		if (this.many) {
+			query[this.path] = (filter.inverted) ? { $not: { $size: 0 } } : { $size: 0 };
 		} else {
-			query[this.path] = (filter.inverse) ? { $ne: null } : null;
+			query[this.path] = (filter.inverted) ? { $ne: null } : null;
 		}
 	}
 	return query;
@@ -102,7 +133,7 @@ relationship.prototype.format = function(item) {
 /**
  * Validates that a value for this field has been provided in a data object
  */
-relationship.prototype.validateInput = function(data, required, item) {
+relationship.prototype.inputIsValid = function(data, required, item) {
 	if (!required) return true;
 	if (!(this.path in data) && item && ((this.many && item.get(this.path).length) || item.get(this.path))) return true;
 	if ('string' === typeof data[this.path]) {
@@ -197,4 +228,4 @@ relationship.prototype.addFilters = function(query, item) {
 };
 
 /* Export Field Type */
-exports = module.exports = relationship;
+module.exports = relationship;

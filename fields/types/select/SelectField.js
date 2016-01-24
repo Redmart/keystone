@@ -1,18 +1,18 @@
+import Field from '../Field';
+import React from 'react';
+import Select from 'react-select';
+import { FormInput } from 'elemental';
+
 /**
  * TODO:
  * - Custom path support
  */
 
-var _ = require('underscore'),
-	React = require('react'),
-	Select = require('react-select'),
-	Field = require('../Field');
-
 module.exports = Field.create({
-	
+
 	displayName: 'SelectField',
-	
-	valueChanged: function(newValue) {
+
+	valueChanged (newValue) {
 		// TODO: This should be natively handled by the Select component
 		if (this.props.numeric && 'string' === typeof newValue) {
 			newValue = newValue ? Number(newValue) : undefined;
@@ -22,17 +22,17 @@ module.exports = Field.create({
 			value: newValue
 		});
 	},
-	
-	renderValue: function() {
-		var selected = _.findWhere(this.props.ops, { value: this.props.value });
-		return <div className="field-value">{selected ? selected.label : null}</div>;
+
+	renderValue () {
+		var selected = this.props.ops.find(option => option.value === this.props.value);
+		return <FormInput noedit>{selected ? selected.label : null}</FormInput>;
 	},
-	
-	renderField: function() {
+
+	renderField () {
 		// TODO: This should be natively handled by the Select component
 		var ops = (this.props.numeric) ? this.props.ops.map(function(i) { return { label: i.label, value: String(i.value) }; }) : this.props.ops;
 		var value = ('number' === typeof this.props.value) ? String(this.props.value) : this.props.value;
-		return <Select name={this.props.path} value={value} options={ops} onChange={this.valueChanged} />;	
+		return <Select simpleValue name={this.props.path} value={value} options={ops} onChange={this.valueChanged} />;
 	}
-	
+
 });

@@ -75,7 +75,7 @@ geopoint.prototype.format = function(item) {
  * @api public
  */
 
-geopoint.prototype.validateInput = function(data, required, item) {//eslint-disable-line no-unused-vars
+geopoint.prototype.inputIsValid = function(data, required, item) {//eslint-disable-line no-unused-vars
 	
 	var values = this.getValueFromData(data);
 
@@ -134,4 +134,4 @@ geopoint.prototype.updateItem = function(item, data) {
  * Export class
  */
 
-exports = module.exports = geopoint;
+module.exports = geopoint;
