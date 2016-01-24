@@ -38,6 +38,13 @@ var ItemView = React.createClass({
 	toggleCreate (visible) {
 		this.setState({
 			createIsOpen: visible,
+			duplicateItemData: undefined
+		});
+	},
+	toggleDuplicateCreate (visible) {
+		this.setState({
+			createIsOpen: visible,
+			duplicateItemData: this.state.itemData
 		});
 	},
 	renderRelationships () {
@@ -81,11 +88,13 @@ var ItemView = React.createClass({
 						list={this.props.list}
 						data={this.state.itemData}
 						drilldown={this.state.itemDrilldown}
-						toggleCreate={this.toggleCreate} />
+						toggleCreate={this.toggleCreate}
+						toggleDuplicateCreate={this.toggleDuplicateCreate} />
 					<Container>
 						<CreateForm
 							list={this.props.list}
 							isOpen={this.state.createIsOpen}
+							values={this.state.duplicateItemData ? this.state.duplicateItemData.fields : {}}
 							onCancel={() => this.toggleCreate(false)} />
 						<FlashMessages
 							messages={this.props.messages} />

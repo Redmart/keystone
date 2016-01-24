@@ -22,18 +22,22 @@ var CreateForm = React.createClass({
 		};
 	},
 	getInitialState () {
-		var values = Object.assign({}, this.props.values);
+		return this.getDecoratedStateByProps(this.props);
+	},
+	getDecoratedStateByProps: function (props) {
+		var values = Object.assign({}, props.values);
 
-		Object.keys(this.props.list.fields).forEach(key => {
-			var field = this.props.list.fields[key];
+		Object.keys(props.list.fields).forEach(key => {
+			var field = props.list.fields[key];
 
 			if (!values[field.path]) {
 				values[field.path] = field.defaultValue;
 			}
 		});
+
 		return {
 			values: values,
-			err: this.props.err,
+			err: props.err,
 		};
 	},
 	handleChange (event) {
@@ -42,6 +46,11 @@ var CreateForm = React.createClass({
 		this.setState({
 			values: values,
 		});
+	},
+	componentWillReceiveProps (nextProps) {
+		this.setState(
+			this.getDecoratedStateByProps(nextProps)
+		);
 	},
 	componentDidUpdate (prevProps) {
 		if (this.props.isOpen !== prevProps.isOpen) {
@@ -112,6 +121,7 @@ var CreateForm = React.createClass({
 		return <Alert type="danger">{alertContent}</Alert>;
 	},
 	renderForm () {
+		console.log(this.state);
 		if (!this.props.isOpen) return;
 
 		var form = [];
