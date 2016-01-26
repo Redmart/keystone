@@ -119,7 +119,7 @@ var Header = React.createClass({
 			props.onClick = () => { this.toggleCreate(true); };
 		}
 		return (
-			<Button type="success" {...props}>
+			<Button type="link" {...props}>
 				<span className="octicon octicon-plus" />
 				<ResponsiveText hiddenXS={`New ${this.props.list.singular}`} visibleXS="Create" />
 			</Button>
