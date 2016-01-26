@@ -119,7 +119,7 @@ var Header = React.createClass({
 			props.onClick = () => { this.toggleCreate(true); };
 		}
 		return (
-			<Button type="link" {...props}>
+			<Button type="success" {...props}>
 				<span className="octicon octicon-plus" />
 				<ResponsiveText hiddenXS={`New ${this.props.list.singular}`} visibleXS="Create" />
 			</Button>
@@ -135,7 +135,7 @@ var Header = React.createClass({
 			props.onClick = () => { this.toggleDuplicateCreate(true); };
 		}
 		return (
-			<Button type="success" {...props}>
+			<Button type="link" {...props}>
 				<span className="octicon octicon-plus" />
 				<ResponsiveText hiddenXS={`Duplicate ${this.props.list.singular}`} visibleXS="Create" />
 			</Button>
