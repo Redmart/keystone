@@ -57,17 +57,17 @@ var GACharts = React.createClass({
 			        datasets : [
 			          {
 			            label: 'Clicks Per Week',
-			            fillColor : 'rgba(220,220,220,0)',
-			            strokeColor : 'rgba(220,220,220,1)',
-			            pointColor : 'rgba(220,220,220,1)',
+                  fillColor : 'rgba(151,187,205,0)',
+			            strokeColor : 'rgba(151,187,205,1)',
+			            pointColor : 'rgba(151,187,205,1)',
 			            pointStrokeColor : '#fff',
 			            data : impressionPerWeekData
 			          },
 			          {
 			            label: 'impression Per Week',
 			            fillColor : 'rgba(151,187,205,0)',
-			            strokeColor : 'rgba(151,187,205,1)',
-			            pointColor : 'rgba(151,187,205,1)',
+                  strokeColor : '#FF0000',
+                  pointColor : '#FF5F5F',
 			            pointStrokeColor : '#fff',
 			            data : clicksPerWeekData
 			          }
@@ -89,8 +89,8 @@ var GACharts = React.createClass({
 									{
 										label: 'CTR',
 										fillColor : 'rgba(220,220,220,0.1)',
-										strokeColor : 'rgba(220,220,220,1)',
-										pointColor : 'rgba(220,220,220,1)',
+										strokeColor : '#FF0000',
+										pointColor : '#FF5F5F',
 										pointStrokeColor : '#fff',
 										data : ctrWeekData
 									}
@@ -133,7 +133,6 @@ var GACharts = React.createClass({
 		}, (err, items) => {
 			// TODO: indicate pagination & link to main list view
       try {
-        // this.setState(items.results[0]);
         var zoneId = items.results[0].fields.zoneId;
         callback(zoneId, itemData.fields.contentId);
       } catch (e) {
@@ -146,8 +145,10 @@ var GACharts = React.createClass({
     return (
       <div>
         <section id="auth-button"></section>
-        <canvas id="impressionAndClicksPerWeek" width="400" height="400"></canvas>
-        <canvas id="ctr" width="400" height="400"></canvas>
+        <h3 class="form-heading">Weekly Impressions and Clicks</h3>
+        <canvas id="impressionAndClicksPerWeek" width="550" height="250"></canvas>
+        <h3 class="form-heading">Weekly CTR</h3>
+        <canvas id="ctr" width="550" height="250"></canvas>
       </div>
     );
 	}
