@@ -121,7 +121,6 @@ var CreateForm = React.createClass({
 		return <Alert type="danger">{alertContent}</Alert>;
 	},
 	renderForm () {
-		console.log(this.state);
 		if (!this.props.isOpen) return;
 
 		var form = [];

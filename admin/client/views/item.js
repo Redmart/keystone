@@ -11,6 +11,7 @@ import MobileNavigation from '../components/MobileNavigation';
 import PrimaryNavigation from '../components/PrimaryNavigation';
 import RelatedItemsList from '../components/RelatedItemsList';
 import SecondaryNavigation from '../components/SecondaryNavigation';
+import GACharts from '../components/GACharts';
 import { Alert, Container, Spinner } from 'elemental';
 
 var ItemView = React.createClass({
@@ -24,6 +25,7 @@ var ItemView = React.createClass({
 	componentDidMount () {
 		this.loadItemData();
 	},
+
 	loadItemData () {
 		this.props.list.loadItem(this.props.itemId, { drilldown: true }, (err, itemData) => {
 			if (err || !itemData) {
@@ -46,6 +48,18 @@ var ItemView = React.createClass({
 			createIsOpen: visible,
 			duplicateItemData: this.state.itemData
 		});
+	},
+	renderGACharts () {
+		let { relationships } = this.props.list;
+		let keys = Object.keys(relationships);
+		if (!keys.length) return;
+		if (!this.props.list.label === 'Contents') return;
+
+
+		let refList = Lists[relationships.zones.ref];
+		let relationship = relationships.zones;
+
+		return <GACharts itemData={this.state.itemData} key={relationship.path} list={this.props.list} refList={refList} relatedItemId={this.props.itemId} relationship={relationship} />;
 	},
 	renderRelationships () {
 		let { relationships } = this.props.list;
@@ -101,6 +115,7 @@ var ItemView = React.createClass({
 						<EditForm
 							list={this.props.list}
 							data={this.state.itemData} />
+						{this.renderGACharts()}
 						{this.renderRelationships()}
 					</Container>
 				</div>
