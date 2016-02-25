@@ -9,8 +9,10 @@ var GACharts = React.createClass({
 	},
 
   mountGACharts (zoneId, contentId) {
-    console.log(zoneId);
-    console.log(contentId);
+		const { itemData } = this.props
+		const { fields } = itemData
+		const { gaViewID } = fields
+
     gapi.analytics.ready(function() {
 
 		  var CLIENT_ID = '839712905523-8u9au5ruj16006o97805foftd65ja04o.apps.googleusercontent.com';
@@ -25,7 +27,7 @@ var GACharts = React.createClass({
 				var now = moment();
 
 				var impressionPerWeek = query({
-					'ids': 'ga:71642809',
+					'ids': gaViewID,
 					'dimensions': 'ga:date',
 					'metrics': 'ga:totalEvents',
 					'filters': 'ga:eventAction=='+zoneId+'_'+contentId+'_impression',
@@ -34,7 +36,7 @@ var GACharts = React.createClass({
 				});
 
 				var clicksPerWeek = query({
-					'ids': 'ga:71642809',
+					'ids': gaViewID,
 					'dimensions': 'ga:date',
 					'metrics': 'ga:totalEvents',
 					'filters': 'ga:eventAction=='+zoneId+'_'+contentId+'_click',
@@ -80,7 +82,7 @@ var GACharts = React.createClass({
 						var zipped = _.zip(clicksPerWeekData, impressionPerWeekData);
 						var ctrWeekData = zipped.map(function(col) {
 							var ctr = (col[0]/col[1]) * 100;
-							return _.isNaN(ctr) ? 0 : ctr;
+							return _.isNaN(ctr) ? 0 : ctr.toFixed(2);
 						});
 
 						var ctrData = {

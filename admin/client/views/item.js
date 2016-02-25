@@ -59,7 +59,16 @@ var ItemView = React.createClass({
 		let refList = Lists[relationships.zones.ref];
 		let relationship = relationships.zones;
 
-		return <GACharts itemData={this.state.itemData} key={relationship.path} list={this.props.list} refList={refList} relatedItemId={this.props.itemId} relationship={relationship} />;
+		return (
+			<GACharts
+				itemData={this.state.itemData}
+				key={relationship.path}
+				list={this.props.list}
+				refList={refList}
+				relatedItemId={this.props.itemId}
+				relationship={relationship}
+			/>
+		)
 	},
 	renderRelationships () {
 		let { relationships } = this.props.list;
