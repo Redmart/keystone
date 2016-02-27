@@ -5,117 +5,172 @@ import moment from 'moment';
 var GACharts = React.createClass({
 	displayName: 'GACharts',
 	componentDidMount () {
-    this.loadItems(this.mountGACharts);
+		var that = this;
+    this.loadItems((zones, contentId) => {
+			const zoneIds = zones.map((zone) => zone.fields.zoneId)
+			that.generateCharts(zoneIds, contentId)
+		});
 	},
 
-  mountGACharts (zoneId, contentId) {
-		const { itemData } = this.props
-		const { fields } = itemData
-		const { gaViewID } = fields
-
+  generateCharts (zoneIds, contentId) {
+		var that = this;
     gapi.analytics.ready(function() {
 
-		  var CLIENT_ID = '839712905523-8u9au5ruj16006o97805foftd65ja04o.apps.googleusercontent.com';
 		  gapi.analytics.auth.authorize({
 		    container: 'auth-button',
-		    clientid: CLIENT_ID,
+		    clientid: '839712905523-8u9au5ruj16006o97805foftd65ja04o.apps.googleusercontent.com',
 		  });
 
-
 		  gapi.analytics.auth.on('success', function(response) {
-
-				var now = moment();
-
-				var impressionPerWeek = query({
-					'ids': gaViewID,
-					'dimensions': 'ga:date',
-					'metrics': 'ga:totalEvents',
-					'filters': 'ga:eventAction=='+zoneId+'_'+contentId+'_impression',
-					'start-date': moment(now).subtract(1, 'day').day(-6).format('YYYY-MM-DD'),
-					'end-date': moment(now).format('YYYY-MM-DD')
-				});
-
-				var clicksPerWeek = query({
-					'ids': gaViewID,
-					'dimensions': 'ga:date',
-					'metrics': 'ga:totalEvents',
-					'filters': 'ga:eventAction=='+zoneId+'_'+contentId+'_click',
-					'start-date': moment(now).subtract(1, 'day').day(-6).format('YYYY-MM-DD'),
-					'end-date': moment(now).format('YYYY-MM-DD')
-				});
-
-				Promise.all([impressionPerWeek, clicksPerWeek]).then(function(results) {
-
-					var impressionPerWeekData = results[0].rows.map(function(row) { return +row[1]; });
-					var clicksPerWeekData = results[1].rows.map(function(row) { return +row[1]; });
-					var labels = results[1].rows.map(function(row) { return +row[0]; });
-
-					labels = labels.map(function(label) {
-		        return moment(label, 'YYYYMMDD').format('ddd');
-		      });
-
-		      var data = {
-			        labels : labels,
-			        datasets : [
-			          {
-			            label: 'Clicks Per Week',
-                  fillColor : 'rgba(151,187,205,0)',
-			            strokeColor : 'rgba(151,187,205,1)',
-			            pointColor : 'rgba(151,187,205,1)',
-			            pointStrokeColor : '#fff',
-			            data : impressionPerWeekData
-			          },
-			          {
-			            label: 'impression Per Week',
-			            fillColor : 'rgba(151,187,205,0)',
-                  strokeColor : '#FF0000',
-                  pointColor : '#FF5F5F',
-			            pointStrokeColor : '#fff',
-			            data : clicksPerWeekData
-			          }
-			        ]
-			      };
-
-						var ctx = document.getElementById("impressionAndClicksPerWeek").getContext("2d");
-			      new Chart(ctx).Line(data);
-
-						var zipped = _.zip(clicksPerWeekData, impressionPerWeekData);
-						var ctrWeekData = zipped.map(function(col) {
-							var ctr = (col[0]/col[1]) * 100;
-							return _.isNaN(ctr) ? 0 : ctr.toFixed(2);
-						});
-
-						var ctrData = {
-								labels : labels,
-								datasets : [
-									{
-										label: 'CTR',
-										fillColor : 'rgba(220,220,220,0.1)',
-										strokeColor : '#FF0000',
-										pointColor : '#FF5F5F',
-										pointStrokeColor : '#fff',
-										data : ctrWeekData
-									}
-								]
-							};
-
-						var ctrCtx = document.getElementById("ctr").getContext("2d");
-			      new Chart(ctrCtx).Line(ctrData);
-					});
-
-				});
-
+				for (var i = 0; i < zoneIds.length; i++) {
+					const zoneId = zoneIds[i];
+					that.initReportGeneration(zoneId, contentId);
+				}
 			});
 
-			function query(params) {
-				return new Promise(function(resolve, reject) {
-					var data = new gapi.analytics.report.Data({query: params});
-					data.once('success', function(response) { resolve(response); })
-							.once('error', function(response) { reject(response); })
-							.execute();
-				});
-			}
+		});
+
   },
+
+	initReportGeneration (zoneId, contentId) {
+		var now = moment();
+		var startDate = moment(now).subtract(1, 'day').day(-6).format('YYYY-MM-DD');
+		var endDate = moment(now).format('YYYY-MM-DD');
+		var that = this;
+
+		this.getImpressionAndClickDataFromGA(startDate, endDate, zoneId, contentId, (impressionGAData, clicksGAData) => {
+
+			var impressionsData = impressionGAData.rows.map(function(row) { return +row[1]; });
+			var clicksData = clicksGAData.rows.map(function(row) { return +row[1]; });
+			var labels = impressionGAData.rows.map(function(row) { return +row[0]; });
+
+			labels = labels.map(function(label) {
+				return moment(label, 'YYYYMMDD').format('ddd');
+			});
+
+			that.generateImpressionsAndClicksChart(labels, impressionsData, clicksData, zoneId);
+			that.generateCTRChart(labels, impressionsData, clicksData, zoneId);
+
+		});
+	},
+
+	getImpressionAndClickDataFromGA (startDate, endDate, zoneId, contentId, callback) {
+		const { itemData } = this.props;
+		const { fields } = itemData;
+		const { gaViewID } = fields;
+
+		var impressionPerWeek = this.query({
+			'ids': gaViewID,
+			'dimensions': 'ga:date',
+			'metrics': 'ga:totalEvents',
+			'filters': 'ga:eventAction=='+zoneId+'_'+contentId+'_impression',
+			'start-date': startDate,
+			'end-date': endDate
+		});
+
+		var clicksPerWeek = this.query({
+			'ids': gaViewID,
+			'dimensions': 'ga:date',
+			'metrics': 'ga:totalEvents',
+			'filters': 'ga:eventAction=='+zoneId+'_'+contentId+'_click',
+			'start-date': startDate,
+			'end-date': endDate
+		});
+
+		Promise.all([impressionPerWeek, clicksPerWeek]).then(function(results) {
+			callback(results[0], results[1]);
+		});
+	},
+
+	generateImpressionsAndClicksChart (labels, impressionsData, clicksData, zoneId) {
+		var data = {
+			labels : labels,
+			datasets : [
+				{
+					label: 'impressions',
+					fillColor : 'rgba(151,187,205,0)',
+					strokeColor : 'rgba(151,187,205,1)',
+					pointColor : 'rgba(151,187,205,1)',
+					pointStrokeColor : '#fff',
+					data : impressionsData
+				},
+				{
+					label: 'clicks',
+					fillColor : 'rgba(151,187,205,0)',
+					strokeColor : '#FF0000',
+					pointColor : '#FF5F5F',
+					pointStrokeColor : '#fff',
+					data : clicksData
+				}]
+			};
+
+			this.appendLineChartToDOM(
+				'Impressions and Clicks for '+zoneId,
+				'impressionAndClicks-'+zoneId,
+				data
+			);
+
+			var ctx = document.getElementById('impressionAndClicks-'+zoneId).getContext("2d");
+			new Chart(ctx).Line(data);
+	},
+
+	generateCTRChart (labels, impressionsData, clicksData, zoneId) {
+		var zipped = _.zip(clicksData, impressionsData);
+		var ctrWeekData = zipped.map(function(col) {
+			var ctr = (col[0]/col[1]) * 100;
+			return _.isNaN(ctr) ? 0 : ctr.toFixed(2);
+		});
+
+		var ctrData = {
+				labels : labels,
+				datasets : [
+					{
+						label: 'CTR',
+						fillColor : 'rgba(220,220,220,0.1)',
+						strokeColor : '#FF0000',
+						pointColor : '#FF5F5F',
+						pointStrokeColor : '#fff',
+						data : ctrWeekData
+					}
+				]
+			};
+
+		this.appendLineChartToDOM(
+			'CTR for '+zoneId,
+			'ctr-'+zoneId,
+			ctrData
+		);
+
+		var ctrCtx = document.getElementById('ctr-'+zoneId).getContext("2d");
+		new Chart(ctrCtx).Line(ctrData);
+	},
+
+	query (params) {
+		return new Promise(function(resolve, reject) {
+			var data = new gapi.analytics.report.Data({query: params});
+			data.once('success', function(response) { resolve(response); })
+					.once('error', function(response) { reject(response); })
+					.execute();
+		});
+	},
+
+	appendLineChartToDOM (title, domID, data) {
+		var newP = document.createElement("p");
+		var newHeading = document.createTextNode(title);
+		newP.appendChild(newHeading);
+
+		var newCanvas = document.createElement("canvas");
+		newCanvas.setAttribute('id', domID);
+
+		newCanvas.setAttribute('width', 650);
+		newCanvas.setAttribute('height', 350);
+
+		document.querySelector('#reporting').appendChild(newP);
+		document.querySelector('#reporting').appendChild(newCanvas);
+
+		var ctx = document.getElementById(domID).getContext("2d");
+		new Chart(ctx).Line(data);
+	},
 
   loadItems (callback) {
 		const { refList, relatedItemId, relationship, itemData } = this.props;
@@ -133,10 +188,8 @@ var GACharts = React.createClass({
 				value: { value: relatedItemId },
 			}],
 		}, (err, items) => {
-			// TODO: indicate pagination & link to main list view
       try {
-        var zoneId = items.results[0].fields.zoneId;
-        callback(zoneId, itemData.fields.contentId);
+        callback(items.results, itemData.fields.contentId);
       } catch (e) {
         console.log(e.message);
       }
@@ -147,10 +200,7 @@ var GACharts = React.createClass({
     return (
       <div>
         <section id="auth-button"></section>
-        <h3 class="form-heading">Weekly Impressions and Clicks</h3>
-        <canvas id="impressionAndClicksPerWeek" width="550" height="250"></canvas>
-        <h3 class="form-heading">Weekly CTR</h3>
-        <canvas id="ctr" width="550" height="250"></canvas>
+				<div id="reporting"></div>
       </div>
     );
 	}
