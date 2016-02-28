@@ -6,8 +6,8 @@ var GACharts = React.createClass({
 	displayName: 'GACharts',
 	componentDidMount () {
 		var that = this;
-    this.loadItems((zones, contentId) => {
-			const zoneIds = zones.map((zone) => zone.fields.zoneId)
+    this.loadItems((zoneIds) => {
+			const contentId = this.props.itemData.fields.contentId;
 			that.generateCharts(zoneIds, contentId)
 		});
 	},
@@ -38,26 +38,59 @@ var GACharts = React.createClass({
 		var endDate = moment(now).format('YYYY-MM-DD');
 		var that = this;
 
-		this.getImpressionAndClickDataFromGA(startDate, endDate, zoneId, contentId, (impressionGAData, clicksGAData) => {
-
-			var impressionsData = impressionGAData.rows.map(function(row) { return +row[1]; });
-			var clicksData = clicksGAData.rows.map(function(row) { return +row[1]; });
-			var labels = impressionGAData.rows.map(function(row) { return +row[0]; });
-
-			labels = labels.map(function(label) {
-				return moment(label, 'YYYYMMDD').format('ddd');
-			});
-
-			that.generateImpressionsAndClicksChart(labels, impressionsData, clicksData, zoneId);
-			that.generateCTRChart(labels, impressionsData, clicksData, zoneId);
-
-		});
-	},
-
-	getImpressionAndClickDataFromGA (startDate, endDate, zoneId, contentId, callback) {
 		const { itemData } = this.props;
 		const { fields } = itemData;
-		const { gaViewID } = fields;
+		const gaViewIDs = fields.gaViewID.split(',');
+
+		for (var i = 0; i < gaViewIDs.length; i++) {
+			const gaViewID = gaViewIDs[i];
+
+			this.createContainerIfDoesntExist(gaViewID);
+
+			this.getImpressionAndClickDataFromGA(gaViewID, startDate, endDate, zoneId, contentId, (impressionGAData, clicksGAData) => {
+
+				var impressionsData = impressionGAData.rows.map(function(row) { return +row[1]; });
+				var clicksData = clicksGAData.rows.map(function(row) { return +row[1]; });
+				var labels = impressionGAData.rows.map(function(row) { return +row[0]; });
+				var requestedDataViewId = impressionGAData.profileInfo.tableId;
+				var containerHeading = impressionGAData.profileInfo.profileName;
+
+				that.appendHeaderToViewContainer(containerHeading, requestedDataViewId);
+
+				labels = labels.map(function(label) {
+					return moment(label, 'YYYYMMDD').format('ddd');
+				});
+
+				const headingForImpressionsAndClicksReport = `Impressions and Clicks for ${zoneId}`;
+				const mountAtDomIdForImpressionAndClicksReport = `impressionAndClicks-${zoneId}`;
+
+				that.generateImpressionsAndClicksChart(
+					labels,
+					impressionsData,
+					clicksData,
+					headingForImpressionsAndClicksReport,
+					mountAtDomIdForImpressionAndClicksReport,
+					requestedDataViewId
+				);
+
+
+				const headingForCTRReport = `CTR for ${zoneId}`;
+				const mountAtDomIdCTRReport = `ctr-${zoneId}`;
+
+				that.generateCTRChart(labels,
+					impressionsData,
+					clicksData,
+					headingForCTRReport,
+					mountAtDomIdCTRReport,
+					requestedDataViewId
+				);
+
+			});
+
+		}
+	},
+
+	getImpressionAndClickDataFromGA (gaViewID, startDate, endDate, zoneId, contentId, callback) {
 
 		var impressionPerWeek = this.query({
 			'ids': gaViewID,
@@ -78,11 +111,12 @@ var GACharts = React.createClass({
 		});
 
 		Promise.all([impressionPerWeek, clicksPerWeek]).then(function(results) {
+			console.log(results)
 			callback(results[0], results[1]);
 		});
 	},
 
-	generateImpressionsAndClicksChart (labels, impressionsData, clicksData, zoneId) {
+	generateImpressionsAndClicksChart (labels, impressionsData, clicksData, heading, mountAtDomId, gaViewID) {
 		var data = {
 			labels : labels,
 			datasets : [
@@ -105,16 +139,14 @@ var GACharts = React.createClass({
 			};
 
 			this.appendLineChartToDOM(
-				'Impressions and Clicks for '+zoneId,
-				'impressionAndClicks-'+zoneId,
+				heading,
+				mountAtDomId,
+				gaViewID,
 				data
 			);
-
-			var ctx = document.getElementById('impressionAndClicks-'+zoneId).getContext("2d");
-			new Chart(ctx).Line(data);
 	},
 
-	generateCTRChart (labels, impressionsData, clicksData, zoneId) {
+	generateCTRChart (labels, impressionsData, clicksData, heading, mountAtDomId, gaViewID) {
 		var zipped = _.zip(clicksData, impressionsData);
 		var ctrWeekData = zipped.map(function(col) {
 			var ctr = (col[0]/col[1]) * 100;
@@ -136,13 +168,11 @@ var GACharts = React.createClass({
 			};
 
 		this.appendLineChartToDOM(
-			'CTR for '+zoneId,
-			'ctr-'+zoneId,
+			heading,
+			mountAtDomId,
+			gaViewID,
 			ctrData
 		);
-
-		var ctrCtx = document.getElementById('ctr-'+zoneId).getContext("2d");
-		new Chart(ctrCtx).Line(ctrData);
 	},
 
 	query (params) {
@@ -154,45 +184,89 @@ var GACharts = React.createClass({
 		});
 	},
 
-	appendLineChartToDOM (title, domID, data) {
+	appendLineChartToDOM (title, domID, containerId, data) {
+		var cleanContainerId = `#${this.cleanUpViewIDOfSpecialCharacters(containerId)}`;
 		var newP = document.createElement("p");
 		var newHeading = document.createTextNode(title);
 		newP.appendChild(newHeading);
 
 		var newCanvas = document.createElement("canvas");
-		newCanvas.setAttribute('id', domID);
+		newCanvas.setAttribute('class', domID);
 
 		newCanvas.setAttribute('width', 650);
 		newCanvas.setAttribute('height', 350);
 
-		document.querySelector('#reporting').appendChild(newP);
-		document.querySelector('#reporting').appendChild(newCanvas);
+		document.querySelector(cleanContainerId).appendChild(newP);
+		document.querySelector(cleanContainerId).appendChild(newCanvas);
 
-		var ctx = document.getElementById(domID).getContext("2d");
+		var ctx = document.querySelector(`${cleanContainerId} .${domID}`).getContext("2d");
 		new Chart(ctx).Line(data);
 	},
 
-  loadItems (callback) {
-		const { refList, relatedItemId, relationship, itemData } = this.props;
-		if (!refList.fields[relationship.refPath]) {
-			const err = (
-				<Alert type="danger">
-					<strong>Error:</strong> Related List <strong>{refList.label}</strong> has no field <strong>{relationship.refPath}</strong>
-				</Alert>
-			);
-			return this.setState({ err });
+	appendHeaderToViewContainer (heading, containerId) {
+		var cleanContainerId = `#${this.cleanUpViewIDOfSpecialCharacters(containerId)}`;
+
+		if (!document.querySelector(`${cleanContainerId} h3`)) {
+			var newH3 = document.createElement("h3");
+			var newHeading = document.createTextNode(heading);
+			newH3.appendChild(newHeading);
+
+			document.querySelector(cleanContainerId).appendChild(newH3);
 		}
-		refList.loadItems({
-			filters: [{
-				field: refList.fields[relationship.refPath],
-				value: { value: relatedItemId },
-			}],
-		}, (err, items) => {
-      try {
-        callback(items.results, itemData.fields.contentId);
-      } catch (e) {
-        console.log(e.message);
-      }
+	},
+
+	createContainerIfDoesntExist (gaViewID) {
+		const newContainerID = this.cleanUpViewIDOfSpecialCharacters(gaViewID);
+		if (!document.querySelector(`#${newContainerID}`)){
+			var newViewIDContainer = document.createElement("div");
+			newViewIDContainer.setAttribute('id', newContainerID);
+			document.querySelector('#reporting').appendChild(newViewIDContainer);
+		}
+	},
+
+	cleanUpViewIDOfSpecialCharacters (viewId) {
+		return viewId.replace(':','');
+	},
+
+  loadItems (callback) {
+		Promise.all(this.getRelationDataFetchPromises()).then(function(zonesResults) {
+
+			let zoneIds = zonesResults.reduce(function (result, next) {
+
+				var zoneId = next.results.map(function (zones) {
+					return zones.fields.zoneId;
+				})
+
+				return result.concat(zoneId);
+
+			}, []);
+
+			callback(_.uniq(zoneIds));
+
+		});
+	},
+
+	getRelationDataFetchPromises () {
+		const { refList, relatedItemId, relationships, itemData } = this.props;
+		let keys = Object.keys(relationships);
+
+		return keys.map((key) => {
+			return new Promise(function(resolve, reject) {
+				let relationship = relationships[key];
+				refList.loadItems({
+					filters: [{
+						field: refList.fields[relationship.refPath],
+						value: { value: relatedItemId },
+					}],
+				}, (err, response) => {
+						// callback(items.results, itemData.fields.contentId);
+					if (err) {
+						reject(err);
+					} else {
+						resolve(response);
+					}
+				});
+			});
 		});
 	},
 
