@@ -109,7 +109,7 @@ module.exports = Field.create({
 			var value = <div className='field-value'>{this.getFilename()}</div>;
 
 			if (this.isFileFormatImage()) {
-				value = <img src={this.getFileURL()} />;
+				value = <img style={{ marginBottom: 10, maxWidth: '100%' }} src={this.getFileURL()} />;
 			}
 
 			values = (

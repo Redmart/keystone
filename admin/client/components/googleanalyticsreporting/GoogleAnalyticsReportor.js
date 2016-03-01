@@ -1,14 +1,16 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import moment from 'moment';
+import { Spinner } from 'elemental';
 
-var GACharts = React.createClass({
-	displayName: 'GACharts',
+var GoogleAnalyticsReportor = React.createClass({
+	displayName: 'GoogleAnalyticsReportor',
 	componentDidMount () {
 		var that = this;
     this.loadItems((zoneIds) => {
 			const contentId = this.props.itemData.fields.contentId;
-			that.generateCharts(zoneIds, contentId)
+      that.removeSpinner();
+			that.generateCharts(zoneIds, contentId);
 		});
 	},
 
@@ -190,17 +192,24 @@ var GACharts = React.createClass({
 		var newHeading = document.createTextNode(title);
 		newP.appendChild(newHeading);
 
+    var legendsDiv = document.createElement("div");
+    legendsDiv.setAttribute('class', `legends-${domID}`);
+
 		var newCanvas = document.createElement("canvas");
 		newCanvas.setAttribute('class', domID);
 
-		newCanvas.setAttribute('width', 650);
-		newCanvas.setAttribute('height', 350);
+    var newWrapperDiv = document.createElement("div");
+    newWrapperDiv.setAttribute('class', `${domID}-container`);
 
-		document.querySelector(cleanContainerId).appendChild(newP);
-		document.querySelector(cleanContainerId).appendChild(newCanvas);
+    document.querySelector(cleanContainerId).appendChild(newWrapperDiv);
+		document.querySelector(`${cleanContainerId} .${domID}-container`).appendChild(newP);
+    document.querySelector(`${cleanContainerId} .${domID}-container`).appendChild(legendsDiv);
+		document.querySelector(`${cleanContainerId} .${domID}-container`).appendChild(newCanvas);
 
 		var ctx = document.querySelector(`${cleanContainerId} .${domID}`).getContext("2d");
-		new Chart(ctx).Line(data);
+		var myChart = new Chart(ctx).Line(data);
+
+    document.querySelector(`${cleanContainerId} .legends-${domID}`).innerHTML = myChart.generateLegend();
 	},
 
 	appendHeaderToViewContainer (heading, containerId) {
@@ -270,14 +279,21 @@ var GACharts = React.createClass({
 		});
 	},
 
+  removeSpinner () {
+    document.querySelector('#reporting').removeChild(document.querySelector('.view-loading-indicator'));
+  },
+
 	render () {
     return (
-      <div>
+      <div id="reporting-container">
+        <h2>Reporting</h2>
         <section id="auth-button"></section>
-				<div id="reporting"></div>
+				<div id="reporting">
+          <div className="view-loading-indicator"><Spinner size="md" /></div>
+        </div>
       </div>
     );
 	}
 });
 
-module.exports = GACharts;
+module.exports = GoogleAnalyticsReportor;

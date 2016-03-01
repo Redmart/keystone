@@ -11,7 +11,7 @@ import MobileNavigation from '../components/MobileNavigation';
 import PrimaryNavigation from '../components/PrimaryNavigation';
 import RelatedItemsList from '../components/RelatedItemsList';
 import SecondaryNavigation from '../components/SecondaryNavigation';
-import GACharts from '../components/GACharts';
+import GoogleAnalyticsReportor from '../components/googleanalyticsreporting/GoogleAnalyticsReportor';
 import { Alert, Container, Spinner } from 'elemental';
 
 var ItemView = React.createClass({
@@ -49,7 +49,7 @@ var ItemView = React.createClass({
 			duplicateItemData: this.state.itemData
 		});
 	},
-	renderGACharts () {
+	renderGoogleAnalyticsReportor () {
 		let { relationships } = this.props.list;
 		let keys = Object.keys(relationships);
 		if (!keys.length) return;
@@ -59,7 +59,7 @@ var ItemView = React.createClass({
 		let refList = Lists[relationships.zones.ref];
 
 		return (
-			<GACharts
+			<GoogleAnalyticsReportor
 				itemData={this.state.itemData}
 				list={this.props.list}
 				refList={refList}
@@ -122,7 +122,7 @@ var ItemView = React.createClass({
 						<EditForm
 							list={this.props.list}
 							data={this.state.itemData} />
-						{this.renderGACharts()}
+						{this.renderGoogleAnalyticsReportor()}
 						{this.renderRelationships()}
 					</Container>
 				</div>
