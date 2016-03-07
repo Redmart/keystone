@@ -9,7 +9,6 @@ var GoogleAnalyticsReportor = React.createClass({
 		var that = this;
     this.loadItems((zoneIds) => {
 			const contentId = this.props.itemData.fields.contentId;
-      that.removeSpinner();
 			that.generateCharts(zoneIds, contentId);
 		});
 	},
@@ -50,6 +49,8 @@ var GoogleAnalyticsReportor = React.createClass({
 			this.createContainerIfDoesntExist(gaViewID);
 
 			this.getImpressionAndClickDataFromGA(gaViewID, startDate, endDate, zoneId, contentId, (impressionGAData, clicksGAData) => {
+
+				that.removeSpinner();
 
 				var impressionsData = impressionGAData.rows.map(function(row) { return +row[1]; });
 				var clicksData = clicksGAData.rows.map(function(row) { return +row[1]; });
@@ -113,7 +114,6 @@ var GoogleAnalyticsReportor = React.createClass({
 		});
 
 		Promise.all([impressionPerWeek, clicksPerWeek]).then(function(results) {
-			console.log(results)
 			callback(results[0], results[1]);
 		});
 	},
